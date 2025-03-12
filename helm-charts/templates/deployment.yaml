@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-lobe-chat
+  labels:
+    app: lobe-chat
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: lobe-chat
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: lobe-chat
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: lobe-chat
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3210
+              protocol: TCP
+          env:
+            - name: DEBUG
+              value: {{ .Values.env.DEBUG | quote }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-lobe-chat-secrets
+                  key: openai-api-key
+            - name: ACCESS_CODE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-lobe-chat-secrets
+                  key: access-code
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-lobe-chat-pvc
+      {{- end }}

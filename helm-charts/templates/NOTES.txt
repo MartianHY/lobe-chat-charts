@@ -1,0 +1,29 @@
+1. 获取 Lobe Chat 应用的 URL:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ .Release.Name }}-lobe-chat)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+     注意: 可能需要几分钟才能分配外部 IP 地址
+     您可以使用以下命令查看状态:
+     kubectl get svc -w {{ .Release.Name }}-lobe-chat
+{{- else if contains "ClusterIP" .Values.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app=lobe-chat,release={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "访问 Lobe Chat 应用，请运行以下命令:"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+  然后在浏览器中访问 http://127.0.0.1:8080
+{{- end }}
+
+2. 配置说明:
+   - 您需要在 values.yaml 中设置正确的 OPENAI_API_KEY 和 ACCESS_CODE
+   - 如需持久化存储，请将 persistence.enabled 设置为 true
+
+3. 部署命令:
+   helm install lobe-chat . 或 helm install lobe-chat lobe-chat

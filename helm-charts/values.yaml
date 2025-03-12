@@ -1,0 +1,45 @@
+# Default values for lobe-chat
+replicaCount: 1
+
+image:
+  repository: lobehub/lobe-chat
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 3210
+  targetPort: 3210
+  nodePort: 33210
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: lobe-chat.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+env:
+  DEBUG: "prod"
+  OPENAI_API_KEY: ""
+  ACCESS_CODE: "lobe66"
+
+# 可选：持久化存储配置
+persistence:
+  enabled: true
+  storageClass: "rook-cephfs"
+  size: 10Gi
+  accessMode: ReadWriteOnce
+  mountPath: /app/data
